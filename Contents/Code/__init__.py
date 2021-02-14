@@ -40,25 +40,26 @@ class KinkAgent(Agent.Movies):
     metadata.genres.clear()
     try:
       sitename = html.xpath('//div[@class="shoot-page"]/@data-sitename')[0]
-      for link in html.xpath('//a[contains(@href,"%s")]/text()' % sitename):
-        if link.strip():
-          metadata.studio = link.strip()
-          metadata.genres.add(metadata.studio)
-          break
-    except:
-      pass
+      metadata.studio = sitename.title()
+    except: pass
 
     # add channels to genres
     # add other tags to collections
     metadata.collections.clear()
-    tags = html.xpath('//div[@class="shoot-info"]//a[starts-with(@href,"/tag/")]')
+    unaccepted_tags = ['bareback', 'airtight playlist', 'anal fingering', 'anal fisting', 'anal stretching', 'best of sas', 'anal creampie', 'blindfold', 'blowjob', 'sadism', 'smothering', 'takedown', 'the chair', 'high heels', 'mixed', 'mind fuck', 'muscle', 'leather belt', 'leather cuffs', 'lingerie', 'bush', 'sub', 'cop', 'feet', 'fingerine', 'fisting', 'gaping', 'role play', 'fetish', 'curvy', 'foreskin', 'uniform', 'hair pulling', 'kinky', 'noose', 'vaginal fisting', 'versatile', 'zapper', 'rimming', 'top', 'stud', 'muscular', 'toned', 'belly punching', 'smoking', 'teacher', 'tied outside', 'outdoors', 'pierced nipples', 'pierced pussy', 'medical fetish', 'discipline', 'hairy', 'kidnapping play', 'straight', 'tattoo', 'big ass', 'bit gag', 'black', 'body builder', 'boot worship', 'bottom', 'brunet', 'blond', 'brutal cockolding', 'brutal punishment', 'cbt', 'champion', 'chastity play', 'christmas', 'circumcised', 'uncircumcised', 'clothespins', 'shaped', 'hand gagging', 'slave', 'female slave', 'nurse', 'submission', 'eighteen and...', 'unshaved', 'other hair color', 'romance', 'oral sex', 'milf', 'domination', 'bdsm', 'chains', 'mask', 'cage', 'choking', 'crop', 'latinx', 'lift and carry', 'rough sex', 'destruction', 'cock and ball torture', 'collar', 'domestic', 'dunking', 'doctor', 'dildo', 'dungeon', 'ebony', 'electro plug']
+
+    #tags = html.xpath('//a[starts-with(@href,"/tag/")]')
+    tags = html.xpath('//p[@class="tag-list category-tag-list"]/a[starts-with(@href,"/tag/")]')
     for tag in tags:
-      if tag.get('href').endswith(':channel'):
-        if not metadata.studio:
-          metadata.studio = tag.text_content().strip()
-        metadata.genres.add(tag.text_content().strip())
-      else:
-        metadata.collections.add(tag.text_content().strip())
+        if not tag.text_content().strip().lower() in unaccepted_tags :
+            metadata.genres.add(tag.text_content().strip().title())
+      
+      #if tag.get('href').endswith(':channel'):
+        #if not metadata.studio:
+          #metadata.studio = tag.text_content().strip()
+        #metadata.genres.add(tag.text_content().strip())
+      #else:
+        #metadata.collections.add(tag.text_content().strip())
 
     # set movie title to shoot title
     metadata.title = html.xpath('//div[@class="shoot-content"]//h1[@class="shoot-title"]/text()')[0] + " (" + metadata.id + ")"
@@ -71,7 +72,7 @@ class KinkAgent(Agent.Movies):
 
     # set movie release date to shoot release date
     try:
-      release_date = html.xpath('//div[@class="shoot-info"]//p[starts-with(normalize-space(.),"Date:")]')[0].text_content().replace('Date: ', '')
+      release_date = html.xpath('//*[@class="shoot-date"]/text()')[0]
       metadata.originally_available_at = Datetime.ParseDate(release_date).date()
       metadata.year = metadata.originally_available_at.year
     except: pass
@@ -85,7 +86,8 @@ class KinkAgent(Agent.Movies):
     
     # fill movie art with all images, so they can be used as backdrops
     try:
-      imgs = html.xpath('//div[@id="previewImages"]//img')
+      #imgs = html.xpath('//div[@id="previewImages"]//img')
+      imgs = html.xpath('//div[@id="gallerySlider"]//img')
       for img in imgs:
         thumbUrl = re.sub(r'/h/[0-9]{3,3}/', r'/h/830/', img.get('src'))
         thumb = HTTP.Request(thumbUrl)
@@ -95,17 +97,15 @@ class KinkAgent(Agent.Movies):
     # summary
     try:
       metadata.summary = ""
-      summary = html.xpath('//div[@class="shoot-info"]/div[@class="description"]')
-      if len(summary) > 0:
-        for paragraph in summary:
-          metadata.summary = metadata.summary + paragraph.text_content().strip().replace('<br>',"\n") + "\n"
-        metadata.summary.strip()
+      #summary1 = html.xpath('//p[@class="tag-list category-tag-list"]/a[starts-with(@href,"/tag/")]')
+      summary1 = html.xpath('//*[@name="description"]/@content')[0]
+      metadata.summary = summary1
     except: pass
 
     # director
     try:
       metadata.directors.clear()
-      director_name = html.xpath('//div[@class="shoot-info"]//p[@class="director"]/a/text()')[0]
+      director_name = html.xpath('//*[@class="director-name"]/a/text()')[0]
       try:
         director = metadata.directors.new()
         director.name = director_name
@@ -117,16 +117,15 @@ class KinkAgent(Agent.Movies):
     
     # starring
     try:
-      starring = html.xpath('//p[@class="starring"]/*[@class="names"]/a')
+      starring = html.xpath('//p[@class="starring"]//a//text()')
       metadata.roles.clear()
       for member in starring:
         role = metadata.roles.new()
-        lename = member.text_content().strip()
         try:
-          role.name = lename
+          role.name = member.replace(',', '')
         except:
           try:
-            role.actor = lename
+            role.actor = member.replace(',', '')
           except: pass
     except: pass
 
