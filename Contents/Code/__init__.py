@@ -51,15 +51,15 @@ class KinkAgent(Agent.Movies):
     #tags = html.xpath('//a[starts-with(@href,"/tag/")]')
     tags = html.xpath('//p[@class="tag-list category-tag-list"]/a[starts-with(@href,"/tag/")]')
     for tag in tags:
-        if not tag.text_content().strip().lower() in unaccepted_tags :
-            metadata.genres.add(tag.text_content().strip().title())
-      
-      #if tag.get('href').endswith(':channel'):
-        #if not metadata.studio:
-          #metadata.studio = tag.text_content().strip()
-        #metadata.genres.add(tag.text_content().strip())
-      #else:
-        #metadata.collections.add(tag.text_content().strip())
+      if not tag.text_content().strip().lower() in unaccepted_tags :
+        metadata.genres.add(tag.text_content().strip().title())
+
+    #if tag.get('href').endswith(':channel'):
+    #if not metadata.studio:
+    #metadata.studio = tag.text_content().strip()
+    #metadata.genres.add(tag.text_content().strip())
+    #else:
+    #metadata.collections.add(tag.text_content().strip())
 
     # set movie title to shoot title
     metadata.title = html.xpath('//div[@class="shoot-content"]//h1[@class="shoot-title"]/text()')[0] + " (" + metadata.id + ")"
@@ -83,7 +83,7 @@ class KinkAgent(Agent.Movies):
       thumbp = HTTP.Request(thumbpUrl)
       metadata.posters[thumbpUrl] = Proxy.Media(thumbp)
     except: pass
-    
+
     # fill movie art with all images, so they can be used as backdrops
     try:
       #imgs = html.xpath('//div[@id="previewImages"]//img')
@@ -114,7 +114,7 @@ class KinkAgent(Agent.Movies):
           metadata.directors.add(director_name)
         except: pass
     except: pass
-    
+
     # starring
     try:
       starring = html.xpath('//p[@class="starring"]//a//text()')
