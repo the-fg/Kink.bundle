@@ -16,22 +16,46 @@ class KinkAgent(Agent.Movies):
   accepts_from = ['com.plexapp.agents.localmedia']
   primary_provider = True
 
+  # search() gets called with a media arguments like {
+  #   'openSubtitlesHash': '0075d46081a49c9c',
+  #   'name': 'Sas 3688',
+  #   'filename': '%2FVolumes%2FData%2Fkinktest%2FSex%2EAnd%2ESubmission%2FSAS_3688%2F3689%2Emp4',
+  #   'plexHash': '4de61af5c49738c2cedfbf3f9c637c07d84e84db',
+  #   'duration': '2509148',
+  #   'id': '254209'
+  # }
   def search(self, results, media, lang):
+    Log.Debug('KinkAgent.search() was called')
 
     title = media.name
     if media.primary_metadata is not None:
+      Log.Debug('title was overridden by primary_metadata.title')
       title = media.primary_metadata.title
+    Log.Debug('Got title "' + title + '"')
 
-    episodeMatch = re.match(r'(?:[A-Za-z]{2,4}[- ])?(\d{3,})', title)
+    # Only direct episode matching by directory names is supported. Directories
+    # must match the episode id, i.e.
+    #    386, 3823, 102405
+    # They may be prepended by a channel abbreviation, i.e.
+    #    SAS_38522, FM-23412, DB 2341
+    # Supported dividing chars are space, dash and underscore or nothing at all:
+    #
+    # The channel abbreviation is ignored as the right channel is found by the
+    # episode id anyway. Nevertheless it might be your attribute of choice to
+    # organize your file system.
+    episodeMatch = re.match(r'(?:[A-Za-z]*[ ]?)*(\d{3,})', title)
 
-    # if file starts with episode id, just go directly to that episode
     if episodeMatch is not None:
       episodeId = episodeMatch.group(1)
+      Log.Debug('Matched episdode id ' + episodeId)
       results.Append(MetadataSearchResult(id = episodeId, name = title, score = 90, lang = lang))
+    else:
+      Log.Debug('Could not match an episode id')
 
     results.Sort('score', descending=True)
 
   def update(self, metadata, media, lang):
+    Log.Debug('KinkAgent.update() has been called')
     html = HTML.ElementFromURL(EXC_MOVIE_INFO % metadata.id,
                                headers={'Cookie': 'viewing-preferences=straight%2Cgay'})
 
