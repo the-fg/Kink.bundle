@@ -1,5 +1,6 @@
 # Kink.com
 import re
+from urllib2 import HTTPError
 
 # URLS
 EXC_BASEURL = 'http://www.kink.com'
@@ -174,130 +175,136 @@ class KinkAgent(Agent.Movies):
         results.Sort('score', descending=True)
 
     def update(self, metadata, media, lang):
-        Log.Debug('KinkAgent.update() has been called')
-        html = HTML.ElementFromURL(EXC_MOVIE_INFO % metadata.id,
-                                   headers={'Cookie': 'viewing-preferences=straight%2Cgay'})
-
-        # Use channel name as the movie studio to be able to select movies by channel
         try:
-            sitename = html.xpath('//div[@class="shoot-page"]/@data-sitename')[0]
-            studio = KinkAgent.channels[sitename.strip()]
-            Log.Debug('Got channel "' + sitename.strip() + '", set studio to "' + studio + '"')
-            metadata.studio = studio
-        except: pass
+            Log.Debug('KinkAgent.update() has been called')
+            html = HTML.ElementFromURL(EXC_MOVIE_INFO % metadata.id,
+                                       headers={'Cookie': 'viewing-preferences=straight%2Cgay'})
 
-        # Previously the collection field was prefilled with the tags but that's not
-        # that useful. Users might want to regain collecitons for the other purposes.
-        # Clear them here if not locked by manual edits.
-        metadata.collections.clear()
+            # Use channel name as the movie studio to be able to select movies by channel
+            try:
+                sitename = html.xpath('//div[@class="shoot-page"]/@data-sitename')[0]
+                studio = KinkAgent.channels[sitename.strip()]
+                Log.Debug('Got channel "' + sitename.strip() + '", set studio to "' + studio + '"')
+                metadata.studio = studio
+            except Exception,e:
+                Log.Error('Error obaining channel for shoot %s [%s]', metadata.id, e.message)
 
-        # Add shoot tags to tag genre
-        # TODO : expose preferences for users to add unacceptable tags
-        #unaccepted_tags = ['bareback', 'airtight playlist', 'anal fingering', 'anal fisting', 'anal stretching', 'best of sas', 'anal creampie', 'blindfold', 'blowjob', 'sadism', 'smothering', 'takedown', 'the chair', 'high heels', 'mixed', 'mind fuck', 'muscle', 'leather belt', 'leather cuffs', 'lingerie', 'bush', 'sub', 'cop', 'feet', 'fingerine', 'fisting', 'gaping', 'role play', 'fetish', 'curvy', 'foreskin', 'uniform', 'hair pulling', 'kinky', 'noose', 'vaginal fisting', 'versatile', 'zapper', 'rimming', 'top', 'stud', 'muscular', 'toned', 'belly punching', 'smoking', 'teacher', 'tied outside', 'outdoors', 'pierced nipples', 'pierced pussy', 'medical fetish', 'discipline', 'hairy', 'kidnapping play', 'straight', 'tattoo', 'big ass', 'bit gag', 'black', 'body builder', 'boot worship', 'bottom', 'brunet', 'blond', 'brutal cockolding', 'brutal punishment', 'cbt', 'champion', 'chastity play', 'christmas', 'circumcised', 'uncircumcised', 'clothespins', 'shaped', 'hand gagging', 'slave', 'female slave', 'nurse', 'submission', 'eighteen and...', 'unshaved', 'other hair color', 'romance', 'oral sex', 'milf', 'domination', 'bdsm', 'chains', 'mask', 'cage', 'choking', 'crop', 'latinx', 'lift and carry', 'rough sex', 'destruction', 'cock and ball torture', 'collar', 'domestic', 'dunking', 'doctor', 'dildo', 'dungeon', 'ebony', 'electro plug']
-        ignore_tags = []
-        # Clear out any existing tags and add all available
-        metadata.genres.clear()
-        tagNodes = html.xpath('//p[@class="tag-list category-tag-list"]/a[starts-with(@href,"/tag/")]')
-        for node in tagNodes:
-            tag = node.text_content().strip().lower()
-            if not tag in ignore_tags:
-                metadata.genres.add(tag)
-                Log.Debug('Added tag "%s"' % tag)
-            else:
-                Log.Debug('Ignored tag "%s"' % tag)
+            # Previously the collection field was prefilled with the tags but that's not
+            # that useful. Users might want to regain collecitons for the other purposes.
+            # Clear them here if not locked by manual edits.
+            metadata.collections.clear()
 
-        # set movie title to shoot title
-        metadata.title = html.xpath('//div[@class="shoot-content"]//h1[@class="shoot-title"]/text()')[0] + " (" + metadata.id + ")"
-        Log.Debug('Set shoot title to "%s"' % metadata.title)
+            # Add shoot tags to tag genre
+            # TODO : expose preferences for users to add unacceptable tags
+            #unaccepted_tags = ['bareback', 'airtight playlist', 'anal fingering', 'anal fisting', 'anal stretching', 'best of sas', 'anal creampie', 'blindfold', 'blowjob', 'sadism', 'smothering', 'takedown', 'the chair', 'high heels', 'mixed', 'mind fuck', 'muscle', 'leather belt', 'leather cuffs', 'lingerie', 'bush', 'sub', 'cop', 'feet', 'fingerine', 'fisting', 'gaping', 'role play', 'fetish', 'curvy', 'foreskin', 'uniform', 'hair pulling', 'kinky', 'noose', 'vaginal fisting', 'versatile', 'zapper', 'rimming', 'top', 'stud', 'muscular', 'toned', 'belly punching', 'smoking', 'teacher', 'tied outside', 'outdoors', 'pierced nipples', 'pierced pussy', 'medical fetish', 'discipline', 'hairy', 'kidnapping play', 'straight', 'tattoo', 'big ass', 'bit gag', 'black', 'body builder', 'boot worship', 'bottom', 'brunet', 'blond', 'brutal cockolding', 'brutal punishment', 'cbt', 'champion', 'chastity play', 'christmas', 'circumcised', 'uncircumcised', 'clothespins', 'shaped', 'hand gagging', 'slave', 'female slave', 'nurse', 'submission', 'eighteen and...', 'unshaved', 'other hair color', 'romance', 'oral sex', 'milf', 'domination', 'bdsm', 'chains', 'mask', 'cage', 'choking', 'crop', 'latinx', 'lift and carry', 'rough sex', 'destruction', 'cock and ball torture', 'collar', 'domestic', 'dunking', 'doctor', 'dildo', 'dungeon', 'ebony', 'electro plug']
+            ignore_tags = []
+            # Clear out any existing tags and add all available
+            metadata.genres.clear()
+            tagNodes = html.xpath('//p[@class="tag-list category-tag-list"]/a[starts-with(@href,"/tag/")]')
+            for node in tagNodes:
+                tag = node.text_content().strip().lower()
+                if not tag in ignore_tags:
+                    metadata.genres.add(tag)
+                    Log.Debug('Added tag "%s"' % tag)
+                else:
+                    Log.Debug('Ignored tag "%s"' % tag)
 
-        # set content rating to XXX
-        metadata.content_rating = 'XXX'
+            # set movie title to shoot title
+            metadata.title = html.xpath('//div[@class="shoot-content"]//h1[@class="shoot-title"]/text()')[0] + " (" + metadata.id + ")"
+            Log.Debug('Set shoot title to "%s"' % metadata.title)
 
-        # Set episode ID as tagline for easy visibility
-        # Still do this though the tagline is not shown anymore
-        metadata.tagline = metadata.studio + " – " + metadata.id
-        Log.Debug('Set tagline to "%s"' % metadata.tagline)
+            # set content rating to XXX
+            metadata.content_rating = 'XXX'
 
-        # set movie release date to shoot release date
-        try:
-            release_date = html.xpath('//*[@class="shoot-date"]/text()')[0]
-            metadata.originally_available_at = Datetime.ParseDate(release_date).date()
-            metadata.year = metadata.originally_available_at.year
-            Log.Debug('Set shoot date to "%s"' % metadata.originally_available_at.strftime('%Y-%m-%d'))
-            Log.Debug('Set shoot year to "%s"' % metadata.year)
-        except Exception,e:
-            Log.Error('Error obaining shoot date for shoot %s [%s]', metadata.id, e.message)
+            # Set episode ID as tagline for easy visibility
+            # Still do this though the tagline is not shown anymore
+            metadata.tagline = metadata.studio + " – " + metadata.id
+            Log.Debug('Set tagline to "%s"' % metadata.tagline)
 
-        # Set poster to the image that kink.com chose as preview image
-        try:
-            thumbpUrl = html.xpath('//video/@poster')[0]
-            thumbp = HTTP.Request(thumbpUrl)
-            metadata.posters[thumbpUrl] = Proxy.Media(thumbp)
-            Log.Debug('Added video preview image found at "%s"', thumbpUrl)
-        except Exception,e:
-            Log.Error('Error obaining shoot images for shoot %s [%s]', metadata.id, e.message)
+            # set movie release date to shoot release date
+            try:
+                release_date = html.xpath('//*[@class="shoot-date"]/text()')[0]
+                metadata.originally_available_at = Datetime.ParseDate(release_date).date()
+                metadata.year = metadata.originally_available_at.year
+                Log.Debug('Set shoot date to "%s"' % metadata.originally_available_at.strftime('%Y-%m-%d'))
+                Log.Debug('Set shoot year to "%s"' % metadata.year)
+            except Exception,e:
+                Log.Error('Error obaining aired date for shoot %s [%s]', metadata.id, e.message)
 
-        # Fill all images found for the shoot to both posters and art to be able to
-        # to choose whichever suits best depending on the theme.
-        try:
-            imgs = html.xpath('//div[@id="gallerySlider"]//img')
-            numImgs = 0
-            for img in imgs:
-                #thumbUrl = re.sub(r'/h/[0-9]{3,3}/', r'/h/830/', img.get('src'))
-                thumbUrl = img.get('data-image-file')
-                thumb = HTTP.Request(thumbUrl)
-                metadata.posters[thumbUrl] = Proxy.Media(thumb)
-                metadata.art[thumbUrl] = Proxy.Media(thumb)
-                Log.Debug('Adding immage "%s"', thumbUrl)
-                numImgs+=1
-            Log.Debug('Added a total of %s images' % numImgs)
-        except Exception,e:
-            Log.Error('Error obaining shoot images for shoot %s [%s]', metadata.id, e.message)
+            # Set poster to the image that kink.com chose as preview image
+            try:
+                thumbpUrl = html.xpath('//video/@poster')[0]
+                thumbp = HTTP.Request(thumbpUrl)
+                metadata.posters[thumbpUrl] = Proxy.Media(thumbp)
+                Log.Debug('Added video preview image found at "%s"', thumbpUrl)
+            except Exception,e:
+                Log.Error('Error obaining poster for shoot %s [%s]', metadata.id, e.message)
 
-        # Plot summary
-        metadata.summary = ""
-        try:
-            metadata.summary = html.xpath('//meta[@name="description"]/@content')[0]
-            Log.Debug('Set shoot summary to "%s"' % metadata.summary)
-        except Exception,e:
-            Log.Error('Error obaining summary for shoot %s [%s]', metadata.id, e.message)
+            # Fill all images found for the shoot to both posters and art to be able to
+            # to choose whichever suits best depending on the theme.
+            try:
+                imgs = html.xpath('//div[@id="gallerySlider"]//img')
+                numImgs = 0
+                for img in imgs:
+                    #thumbUrl = re.sub(r'/h/[0-9]{3,3}/', r'/h/830/', img.get('src'))
+                    thumbUrl = img.get('data-image-file')
+                    thumb = HTTP.Request(thumbUrl)
+                    metadata.posters[thumbUrl] = Proxy.Media(thumb)
+                    metadata.art[thumbUrl] = Proxy.Media(thumb)
+                    Log.Debug('Adding immage "%s"', thumbUrl)
+                    numImgs+=1
+                Log.Debug('Added a total of %s images' % numImgs)
+            except Exception,e:
+                Log.Error('Error obaining art for shoot %s [%s]', metadata.id, e.message)
 
-        # Director
-        metadata.directors.clear()
-        try:
-            director_name = html.xpath('//*[@class="director-name"]/a/text()')[0]
-            director = metadata.directors.new()
-            director.name = director_name
-            Log.Debug('Added shoot director "%s"' % director.name)
-        except Exception,e:
-            Log.Error('Error obaining director for shoot %s [%s]', metadata.id, e.message)
+            # Plot summary
+            metadata.summary = ""
+            try:
+                metadata.summary = html.xpath('//meta[@name="description"]/@content')[0]
+                Log.Debug('Set shoot summary to "%s"' % metadata.summary)
+            except Exception,e:
+                Log.Error('Error obaining summary for shoot %s [%s]', metadata.id, e.message)
 
-        # Add models
-        metadata.roles.clear()
-        try:
-            models = html.xpath('//p[@class="starring"]//a')
-            Log.Debug('Proccessing %s models found' % len(models))
-            for model in models:
-                Log.Debug('Fetching model with URL "%s"' % model.get('href'))
-                modelHtml = HTML.ElementFromURL(EXC_BASEURL + model.get('href'),
+            # Director
+            metadata.directors.clear()
+            try:
+                director_name = html.xpath('//*[@class="director-name"]/a/text()')[0]
+                director = metadata.directors.new()
+                director.name = director_name
+                Log.Debug('Added director "%s"' % director.name)
+            except Exception,e:
+                Log.Error('Error obaining director for shoot %s [%s]', metadata.id, e.message)
+
+            # Add models
+            metadata.roles.clear()
+            try:
+                models = html.xpath('//p[@class="starring"]//a')
+                Log.Debug('Proccessing %s models found' % len(models))
+                for model in models:
+                    Log.Debug('Fetching model with URL "%s"' % model.get('href'))
+                    modelHtml = HTML.ElementFromURL(EXC_BASEURL + model.get('href'),
+                                                    headers={'Cookie': 'viewing-preferences=straight%2Cgay'})
+
+                    bioData = modelHtml.xpath('//div[contains(@class, "bio-favorite")]')[0]
+                    # Fetch first bio slider image to use as photo
+                    imgData = modelHtml.xpath('//img[contains(@class, "bio-slider-img")]')[0]
+
+                    role = metadata.roles.new()
+                    role.name = bioData.get('data-title')
+                    role.photo = imgData.get('src')
+                    Log.Debug('Stored model "%s" with photo "%s"', role.name, role.photo)
+            except Exception,e:
+                Log.Error('Error obtaining performers for shoot %s [%s]', metadata.id, e.message)
+
+            # Shoot Rating
+            try:
+                ratingData = JSON.ObjectFromURL(url=EXC_BASEURL + '/api/ratings/%s' % metadata.id,
                                                 headers={'Cookie': 'viewing-preferences=straight%2Cgay'})
-
-                bioData = modelHtml.xpath('//div[contains(@class, "bio-favorite")]')[0]
-                # Fetch first bio slider image to use as photo
-                imgData = modelHtml.xpath('//img[contains(@class, "bio-slider-img")]')[0]
-
-                role = metadata.roles.new()
-                role.name = bioData.get('data-title')
-                role.photo = imgData.get('src')
-                Log.Debug('Stored model "%s" with photo "%s"', role.name, role.photo)
-        except Exception,e:
-            Log.Error('Error obtaining performers for shoot %s [%s]', metadata.id, e.message)
-
-        # Shoot Rating
-        try:
-            ratingData = JSON.ObjectFromURL(url=EXC_BASEURL + '/api/ratings/%s' % metadata.id,
-                                            headers={'Cookie': 'viewing-preferences=straight%2Cgay'})
-            metadata.rating = float(ratingData['ratingPositiveCount'])/float(ratingData['ratingCount']) * 10
-            Log.Debug('Set shoot rating to "%s"' % metadata.rating)
-        except Exception,e:
+                metadata.rating = float(ratingData['ratingPositiveCount'])/float(ratingData['ratingCount']) * 10
+                Log.Debug('Set shoot rating to "%s"' % metadata.rating)
+            except Exception,e:
+                Log.Error('Error obaining rating for shoot %s [%s]', metadata.id, e.message)
+        except HTTPError, e:
+            Log.Error('HTTP error while scraping shooting %s [%s - %s]', metadata.id, e.code, e.msg)
+        except Exception, e:
             Log.Error('Error obaining rating for shoot %s [%s]', metadata.id, e.message)
