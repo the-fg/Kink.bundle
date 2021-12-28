@@ -186,7 +186,7 @@ class KinkAgent(Agent.Movies):
                 studio = KinkAgent.channels[sitename.strip()]
                 Log.Debug('Got channel "' + sitename.strip() + '", set studio to "' + studio + '"')
                 metadata.studio = studio
-            except Exception,e:
+            except (Exception) as e:
                 Log.Error('Error obaining channel for shoot %s [%s]', metadata.id, e.message)
 
             # Previously the collection field was prefilled with the tags but that's not
@@ -228,7 +228,7 @@ class KinkAgent(Agent.Movies):
                 metadata.year = metadata.originally_available_at.year
                 Log.Debug('Set shoot date to "%s"' % metadata.originally_available_at.strftime('%Y-%m-%d'))
                 Log.Debug('Set shoot year to "%s"' % metadata.year)
-            except Exception,e:
+            except (Exception) as e:
                 Log.Error('Error obaining aired date for shoot %s [%s]', metadata.id, e.message)
 
             # Set poster to the image that kink.com chose as preview image
@@ -237,7 +237,7 @@ class KinkAgent(Agent.Movies):
                 thumbp = HTTP.Request(thumbpUrl)
                 metadata.posters[thumbpUrl] = Proxy.Media(thumbp)
                 Log.Debug('Added video preview image found at "%s"', thumbpUrl)
-            except Exception,e:
+            except (Exception) as e:
                 Log.Error('Error obaining poster for shoot %s [%s]', metadata.id, e.message)
 
             # Fill all images found for the shoot to both posters and art to be able to
@@ -254,7 +254,7 @@ class KinkAgent(Agent.Movies):
                     Log.Debug('Adding immage "%s"', thumbUrl)
                     numImgs+=1
                 Log.Debug('Added a total of %s images' % numImgs)
-            except Exception,e:
+            except (Exception) as e:
                 Log.Error('Error obaining art for shoot %s [%s]', metadata.id, e.message)
 
             # Plot summary
@@ -262,7 +262,7 @@ class KinkAgent(Agent.Movies):
             try:
                 metadata.summary = html.xpath('//meta[@name="description"]/@content')[0]
                 Log.Debug('Set shoot summary to "%s"' % metadata.summary)
-            except Exception,e:
+            except (Exception) as e:
                 Log.Error('Error obaining summary for shoot %s [%s]', metadata.id, e.message)
 
             # Director
@@ -272,7 +272,7 @@ class KinkAgent(Agent.Movies):
                 director = metadata.directors.new()
                 director.name = director_name
                 Log.Debug('Added director "%s"' % director.name)
-            except Exception,e:
+            except (Exception) as e:
                 Log.Error('Error obaining director for shoot %s [%s]', metadata.id, e.message)
 
             # Add models
@@ -293,7 +293,7 @@ class KinkAgent(Agent.Movies):
                     role.name = bioData.get('data-title')
                     role.photo = imgData.get('src')
                     Log.Debug('Stored model "%s" with photo "%s"', role.name, role.photo)
-            except Exception,e:
+            except (Exception) as e:
                 Log.Error('Error obtaining performers for shoot %s [%s]', metadata.id, e.message)
 
             # Shoot Rating
@@ -302,9 +302,9 @@ class KinkAgent(Agent.Movies):
                                                 headers={'Cookie': 'viewing-preferences=straight%2Cgay'})
                 metadata.rating = float(ratingData['ratingPositiveCount'])/float(ratingData['ratingCount']) * 10
                 Log.Debug('Set shoot rating to "%s"' % metadata.rating)
-            except Exception,e:
+            except (Exception) as e:
                 Log.Error('Error obaining rating for shoot %s [%s]', metadata.id, e.message)
-        except HTTPError, e:
+        except (HTTPError) as e:
             Log.Error('HTTP error while scraping shooting %s [%s - %s]', metadata.id, e.code, e.msg)
-        except Exception, e:
+        except (Exception) as e:
             Log.Error('Error obaining rating for shoot %s [%s]', metadata.id, e.message)
