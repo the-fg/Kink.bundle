@@ -282,17 +282,20 @@ class KinkAgent(Agent.Movies):
                 Log.Debug('Proccessing %s models found' % len(models))
                 for model in models:
                     Log.Debug('Fetching model with URL "%s"' % model.get('href'))
-                    modelHtml = HTML.ElementFromURL(EXC_BASEURL + model.get('href'),
-                                                    headers={'Cookie': 'viewing-preferences=straight%2Cgay'})
+                    try:
+                        modelHtml = HTML.ElementFromURL(EXC_BASEURL + model.get('href'),
+                                                        headers={'Cookie': 'viewing-preferences=straight%2Cgay'})
 
-                    bioData = modelHtml.xpath('//div[contains(@class, "bio-favorite")]')[0]
-                    # Fetch first bio slider image to use as photo
-                    imgData = modelHtml.xpath('//img[contains(@class, "bio-slider-img")]')[0]
+                        bioData = modelHtml.xpath('//div[contains(@class, "bio-favorite")]')[0]
+                        # Fetch first bio slider image to use as photo
+                        imgData = modelHtml.xpath('//img[@class="bio-slider-img"]|//img[@class="bio-img"]')[0]
 
-                    role = metadata.roles.new()
-                    role.name = bioData.get('data-title')
-                    role.photo = imgData.get('src')
-                    Log.Debug('Stored model "%s" with photo "%s"', role.name, role.photo)
+                        role = metadata.roles.new()
+                        role.name = bioData.get('data-title')
+                        role.photo = imgData.get('src')
+                        Log.Debug('Stored model "%s" with photo "%s"', role.name, role.photo)
+                    except (Exception) as e:
+                        Log.Debug('Unable to store model "%s" [%s]', model.get('href'), e.message)
             except (Exception) as e:
                 Log.Error('Error obtaining performers for shoot %s [%s]', metadata.id, e.message)
 
