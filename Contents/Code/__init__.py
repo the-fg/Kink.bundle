@@ -3,7 +3,7 @@ import re
 from urllib2 import HTTPError
 
 # URLS
-EXC_BASEURL = 'http://www.kink.com'
+EXC_BASEURL = 'https://www.kink.com'
 EXC_SEARCH_MOVIES = EXC_BASEURL + '/search?q=%s'
 EXC_MOVIE_INFO = EXC_BASEURL + '/shoot/%s'
 
