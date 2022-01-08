@@ -167,7 +167,7 @@ class KinkAgent(Agent.Movies):
 
         if episodeMatch is not None:
             episodeId = episodeMatch.group(1)
-            Log.Debug('Matched episdode id ' + episodeId)
+            Log.Debug('Matched episode id ' + episodeId)
             results.Append(MetadataSearchResult(id = episodeId, name = title, score = 90, lang = lang))
         else:
             Log.Debug('Could not match an episode id')
